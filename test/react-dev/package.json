@@ -1,12 +1,13 @@
 {
-  "name": "test-vanilla-app",
+  "name": "test-react-dev",
   "version": "0.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "start": "python3 -m http.server 8081"
+    "dev": "vite"
   },
   "dependencies": {
-    "chat-assistant-plugin": "^0.1.9",
+    "@mohamedabu.basith/react-chat-widget": "^1.0.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "vite": "^7.1.3"
