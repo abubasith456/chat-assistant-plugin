@@ -1,0 +1,24 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>React Plugin Test (ES Module)</title>
+  <style>body{font-family:system-ui,Arial;padding:20px}</style>
+  <script type="module">
+    import React from 'https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js';
+    import ReactDOM from 'https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js';
+    import Widget from './node_modules/@mohamedabu.basith/react-chat-widget/dist/index.esm.js';
+
+    const root = document.getElementById('root');
+    const el = React.createElement('div', {style:{padding:20}}, [
+      React.createElement('h2', {key:'h2'}, 'React plugin test (loaded ESM)'),
+      React.createElement(Widget.default || Widget, { key: 'w', title: 'React test', placeholder: 'Type...' })
+    ]);
+    ReactDOM.createRoot(root).render(el);
+  </script>
+</head>
+<body>
+  <div id="root"></div>
+  <p>Open this file via a local static server: <code>python3 -m http.server 8080</code> from the test folder and visit <a href="http://localhost:8080/react/index.html">/react/index.html</a>.</p>
+</body>
+</html>

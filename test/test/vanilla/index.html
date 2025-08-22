@@ -1,0 +1,24 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Vanilla Plugin Test</title>
+    <style>body{font-family:system-ui,Arial;padding:20px}</style>
+  </head>
+  <body>
+    <h2>Vanilla plugin test</h2>
+    <div id="vanilla-root"></div>
+
+    <!-- load the installed plugin from node_modules -->
+    <script src="./node_modules/chat-assistant-plugin/plugin.js"></script>
+    <script>
+      // plugin exposes a global init API (window.AuroraPlugin.init)
+      const root = document.getElementById('vanilla-root');
+      if (window.AuroraPlugin && typeof window.AuroraPlugin.init === 'function') {
+        window.AuroraPlugin.init(root, { welcomeMessage: 'Hello from vanilla test (local)' });
+      } else {
+        root.innerText = 'Vanilla plugin not available. Make sure npm install ran in the test folder.';
+      }
+    </script>
+  </body>
+</html>
