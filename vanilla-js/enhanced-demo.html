@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Chat Widget - Vanilla JS Demo</title>
+    <link rel="stylesheet" href="./chat-widget-enhanced.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 40px 20px;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+        
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, #fff, #f0f0ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .demo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 60px;
+        }
+        
+        .demo-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .demo-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        }
+        
+        .demo-card h3 {
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+        
+        .demo-card p {
+            opacity: 0.8;
+            margin-bottom: 20px;
+        }
+        
+        .demo-button {
+            background: linear-gradient(45deg, #3B82F6, #8B5CF6);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .demo-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+        }
+        
+        .demo-button.secondary {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .features {
+            margin-top: 80px;
+            text-align: center;
+        }
+        
+        .features h2 {
+            font-size: 2.5rem;
+            margin-bottom: 40px;
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+        
+        .feature-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px 20px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 20px;
+            background: linear-gradient(45deg, #3B82F6, #8B5CF6);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .feature-item h3 {
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+        
+        .feature-item p {
+            opacity: 0.8;
+            font-size: 0.95rem;
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .demo-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Enhanced Chat Widget</h1>
+            <p>Beautiful, modern chat widget built with pure Vanilla JavaScript. Fully customizable with stunning animations and responsive design.</p>
+        </div>
+        
+        <div class="demo-grid">
+            <div class="demo-card">
+                <h3>🎨 Default Theme</h3>
+                <p>Clean and professional design with blue accent colors and smooth animations.</p>
+                <button class="demo-button" onclick="createDefaultWidget()">Launch Widget</button>
+                <button class="demo-button secondary" onclick="removeWidget('default')">Remove</button>
+            </div>
+            
+            <div class="demo-card">
+                <h3>🌟 Premium Theme</h3>
+                <p>Elegant purple gradient theme with enhanced visual effects and premium feel.</p>
+                <button class="demo-button" onclick="createPremiumWidget()">Launch Widget</button>
+                <button class="demo-button secondary" onclick="removeWidget('premium')">Remove</button>
+            </div>
+            
+            <div class="demo-card">
+                <h3>🚀 Modern Theme</h3>
+                <p>Cutting-edge design with gradient backgrounds and contemporary styling.</p>
+                <button class="demo-button" onclick="createModernWidget()">Launch Widget</button>
+                <button class="demo-button secondary" onclick="removeWidget('modern')">Remove</button>
+            </div>
+            
+            <div class="demo-card">
+                <h3>🌙 Dark Theme</h3>
+                <p>Sleek dark mode design perfect for modern applications and night usage.</p>
+                <button class="demo-button" onclick="createDarkWidget()">Launch Widget</button>
+                <button class="demo-button secondary" onclick="removeWidget('dark')">Remove</button>
+            </div>
+        </div>
+        
+        <div class="features">
+            <h2>Key Features</h2>
+            <div class="feature-grid">
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <svg width="30" height="30" fill="none" stroke="white" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4h4a2 2 0 002-2V5z"/>
+                        </svg>
+                    </div>
+                    <h3>Fully Responsive</h3>
+                    <p>Adapts perfectly to all screen sizes with mobile-optimized interactions</p>
+                </div>
+                
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <svg width="30" height="30" fill="none" stroke="white" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100-4m0 4v2m0-6V4"/>
+                        </svg>
+                    </div>
+                    <h3>Highly Customizable</h3>
+                    <p>Configure colors, position, size, and content to match your brand</p>
+                </div>
+                
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <svg width="30" height="30" fill="none" stroke="white" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                    </div>
+                    <h3>Lightning Fast</h3>
+                    <p>Zero dependencies, pure vanilla JavaScript for maximum performance</p>
+                </div>
+                
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <svg width="30" height="30" fill="none" stroke="white" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"/>
+                        </svg>
+                    </div>
+                    <h3>Smooth Animations</h3>
+                    <p>Beautiful transitions and micro-interactions for delightful UX</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="./chat-widget-enhanced.js"></script>
+    <script>
+        let widgets = {};
+        
+        function createDefaultWidget() {
+            removeWidget('default');
+            widgets.default = new EnhancedChatWidget({
+                position: 'bottom-right',
+                title: 'Support Chat',
+                primaryColor: '#3B82F6',
+                headerBgColor: '#3B82F6',
+                userBubbleColor: '#3B82F6'
+            }).mount();
+        }
+        
+        function createPremiumWidget() {
+            removeWidget('premium');
+            widgets.premium = new EnhancedChatWidget({
+                position: 'bottom-left',
+                title: '💎 Premium Support',
+                primaryColor: '#8B5CF6',
+                headerBgColor: '#8B5CF6',
+                userBubbleColor: '#8B5CF6',
+                buttonBgColor: '#8B5CF6'
+            }).mount();
+        }
+        
+        function createModernWidget() {
+            removeWidget('modern');
+            widgets.modern = new EnhancedChatWidget({
+                position: 'top-right',
+                title: '🚀 Modern Chat',
+                primaryColor: '#10B981',
+                headerBgColor: '#10B981',
+                userBubbleColor: '#10B981',
+                buttonBgColor: '#10B981',
+                placeholder: 'What can I help you with?'
+            }).mount();
+        }
+        
+        function createDarkWidget() {
+            removeWidget('dark');
+            widgets.dark = new EnhancedChatWidget({
+                position: 'top-left',
+                title: '🌙 Dark Mode',
+                primaryColor: '#1F2937',
+                headerBgColor: '#1F2937',
+                headerTextColor: '#F9FAFB',
+                backgroundColor: '#111827',
+                textColor: '#F9FAFB',
+                inputBgColor: '#374151',
+                inputTextColor: '#F9FAFB',
+                messageBubbleColor: '#374151',
+                userBubbleColor: '#3B82F6',
+                buttonBgColor: '#3B82F6'
+            }).mount();
+        }
+        
+        function removeWidget(name) {
+            if (widgets[name]) {
+                widgets[name].destroy();
+                delete widgets[name];
+            }
+        }
+        
+        // Create a default widget on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                createDefaultWidget();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

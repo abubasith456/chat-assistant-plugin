@@ -1,207 +1,318 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { ChatWidgetProps, ChatMessage, ChatAdapter, BackendFn } from '../types'
-import { SampleChatAdapter } from '../adapters/sampleAdapter'
-import MessageBubble from './MessageBubble'
-import '../styles/chat.css'
+import React, { useState, useRef, useEffect } from 'react';
 
-function useAutoScroll(containerRef: React.RefObject<HTMLElement>, deps: any[]) {
-  useEffect(() => {
-    const el = containerRef.current
-    if (!el) return
-    el.scrollTop = el.scrollHeight
-  }, deps)
+// Configuration interface
+export interface ChatWidgetConfig {
+  // Position
+  position?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+  
+  // Size
+  width?: string;
+  height?: string;
+  borderRadius?: string;
+  
+  // Colors
+  primaryColor?: string;
+  backgroundColor?: string;
+  textColor?: string;
+  headerBgColor?: string;
+  headerTextColor?: string;
+  inputBgColor?: string;
+  inputTextColor?: string;
+  buttonBgColor?: string;
+  buttonTextColor?: string;
+  messageBubbleColor?: string;
+  userBubbleColor?: string;
+  
+  // Content
+  title?: string;
+  placeholder?: string;
+  
+  // UI Options
+  showUserAvatar?: boolean;
+  showBotAvatar?: boolean;
+  showOnlineIndicator?: boolean;
+  compactHeader?: boolean;
+  
+  // Behavior
+  defaultOpen?: boolean;
 }
 
-export default function ChatWidget(props: ChatWidgetProps) {
-  const {
-    title = 'Aurora Assistant',
-    placeholder = 'Type a message...',
-    welcomeMessage = 'Hello! I am Aurora — a helpful assistant.',
-    theme = 'dark',
-    position = 'bottom-right',
-    initialOpen = false,
-    messages: controlledMessages,
-    onMessagesChange,
-    adapter,
-  island = true,
-  accentFrom,
-  accentTo,
-  } = props
+// Sample messages
+const sampleMessages: Message[] = [
+  { id: 1, text: "Hi! How can I help you today?", sender: 'bot', timestamp: new Date(Date.now() - 10000) },
+  { id: 2, text: "I need help with my account", sender: 'user', timestamp: new Date(Date.now() - 8000) },
+  { id: 3, text: "I'd be happy to help you with your account. What specific issue are you experiencing?", sender: 'bot', timestamp: new Date(Date.now() - 5000) },
+  { id: 4, text: "I can't log in", sender: 'user', timestamp: new Date(Date.now() - 3000) },
+  { id: 5, text: "Let me help you troubleshoot the login issue. Have you tried resetting your password?", sender: 'bot', timestamp: new Date(Date.now() - 1000) },
+];
 
-  const [open, setOpen] = useState<boolean>(initialOpen)
-  const [internalMessages, setInternalMessages] = useState<ChatMessage[]>([])
-  const [input, setInput] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+interface Message {
+  id: number;
+  text: string;
+  sender: 'user' | 'bot';
+  timestamp: Date;
+}
 
-  const isControlled = Array.isArray(controlledMessages)
-  const messages = isControlled ? (controlledMessages as ChatMessage[]) : internalMessages
+interface ChatWidgetProps {
+  config?: ChatWidgetConfig;
+}
 
-  const bodyRef = useRef<HTMLDivElement | null>(null)
-  useAutoScroll(bodyRef, [messages])
+const ChatWidget: React.FC<ChatWidgetProps> = ({ config = {} }) => {
+  // Default configuration
+  const defaultConfig: ChatWidgetConfig = {
+    position: 'bottom-right',
+    width: '380px',
+    height: '500px',
+    borderRadius: '12px',
+    primaryColor: '#3B82F6',
+    backgroundColor: '#FFFFFF',
+    textColor: '#374151',
+    headerBgColor: '#3B82F6',
+    headerTextColor: '#FFFFFF',
+    inputBgColor: '#F9FAFB',
+    inputTextColor: '#374151',
+    buttonBgColor: '#3B82F6',
+    buttonTextColor: '#FFFFFF',
+    messageBubbleColor: '#F3F4F6',
+    userBubbleColor: '#3B82F6',
+    title: 'Chat Assistant',
+    placeholder: 'Type your message...',
+    showUserAvatar: true,
+    showBotAvatar: true,
+    showOnlineIndicator: true,
+    compactHeader: false,
+    defaultOpen: false,
+  };
 
-  const resolvedAdapter: ChatAdapter | { send: BackendFn } = useMemo(() => {
-  if (adapter) return adapter
-  // fallback to sample adapter
-  return new SampleChatAdapter()
-  }, [adapter])
+  // Merge configs
+  const finalConfig = { ...defaultConfig, ...config };
 
-  useEffect(() => {
-    let mounted = true
-    const load = async () => {
-      try {
-        if ('getInitialMessages' in (resolvedAdapter as ChatAdapter)) {
-          const res = await (resolvedAdapter as ChatAdapter).getInitialMessages()
-          if (!mounted) return
-          if (!isControlled) setInternalMessages(res)
-        } else {
-          // no-op: vanilla adapter will provide messages via init
-        }
-      } catch (err: any) {
-        setError(err?.message || 'Failed to load messages')
-      }
-    }
-    load()
-    return () => {
-      mounted = false
-    }
-  }, [resolvedAdapter, isControlled])
+  // State
+  const [isOpen, setIsOpen] = useState(finalConfig.defaultOpen);
+  const [messages, setMessages] = useState<Message[]>(sampleMessages);
+  const [inputValue, setInputValue] = useState('');
+  
+  // Refs
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const pushMessage = useCallback(
-    (m: ChatMessage) => {
-      if (isControlled) {
-        const next = [...(controlledMessages || []), m]
-        onMessagesChange?.(next)
-      } else {
-        setInternalMessages((s) => [...s, m])
-      }
-    },
-    [controlledMessages, isControlled, onMessagesChange]
-  )
-
-  const send = useCallback(async () => {
-    if (!input.trim()) return
-    setError(null)
-    const userMsg: ChatMessage = { id: String(Date.now()), role: 'user', text: input }
-    pushMessage(userMsg)
-    setInput('')
-    setLoading(true)
-
-    try {
-      let result
-      if ('sendMessage' in (resolvedAdapter as ChatAdapter)) {
-        result = await (resolvedAdapter as ChatAdapter).sendMessage(userMsg)
-      } else if ('send' in (resolvedAdapter as any)) {
-        result = await (resolvedAdapter as any).send(userMsg)
-      }
-
-      if (result && result.message) {
-        pushMessage(result.message)
-      }
-    } catch (err: any) {
-      setError(err?.message || 'Failed to send message')
-      // push an error system message
-      pushMessage({ id: String(Date.now() + 1), role: 'system', text: 'Error: failed to send. Try again.' })
-    } finally {
-      setLoading(false)
-    }
-  }, [input, pushMessage, resolvedAdapter])
+  // Auto-scroll to bottom
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   useEffect(() => {
-    function handleKey(e: KeyboardEvent) {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault()
-        setOpen((v) => !v)
-      }
+    scrollToBottom();
+  }, [messages]);
+
+  // Handle send message
+  const handleSendMessage = () => {
+    if (inputValue.trim()) {
+      const newMessage: Message = {
+        id: Date.now(),
+        text: inputValue,
+        sender: 'user',
+        timestamp: new Date(),
+      };
+      
+      setMessages(prev => [...prev, newMessage]);
+      setInputValue('');
+      
+      // Simulate bot response
+      setTimeout(() => {
+        const botResponse: Message = {
+          id: Date.now() + 1,
+          text: "Thank you for your message! This is a sample response from the chat assistant.",
+          sender: 'bot',
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, botResponse]);
+      }, 1000);
     }
-    window.addEventListener('keydown', handleKey)
-    return () => window.removeEventListener('keydown', handleKey)
-  }, [])
+  };
 
-  const positionClass = position === 'bottom-left' ? 'left-4' : 'right-4'
-  const themeClass = theme === 'light' ? 'text-slate-900' : 'text-white'
+  // Handle key press
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSendMessage();
+    }
+  };
 
-  // apply CSS variables for accent if provided
-  const accentStyle: React.CSSProperties | undefined = accentFrom || accentTo ? {
-    ['--ca-accent-from' as any]: accentFrom || undefined,
-    ['--ca-accent-to' as any]: accentTo || undefined,
-  } : undefined
+  // Position classes - responsive positioning
+  const positionClasses = {
+    'bottom-right': 'bottom-2 right-2 sm:bottom-4 sm:right-4',
+    'bottom-left': 'bottom-2 left-2 sm:bottom-4 sm:left-4', 
+    'top-right': 'top-2 right-2 sm:top-4 sm:right-4',
+    'top-left': 'top-2 left-2 sm:top-4 sm:left-4',
+  };
+
+  // Panel positioning - responsive for mobile
+  const panelPositionClasses = {
+    'bottom-right': window.innerWidth <= 480 ? 'bottom-2 right-2' : 'bottom-0 right-0',
+    'bottom-left': window.innerWidth <= 480 ? 'bottom-2 left-2' : 'bottom-0 left-0',
+    'top-right': window.innerWidth <= 480 ? 'top-2 right-2' : 'top-0 right-0', 
+    'top-left': window.innerWidth <= 480 ? 'top-2 left-2' : 'top-0 left-0',
+  };
+
+  // Format time
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
 
   return (
-    <div className={`fixed bottom-6 ${positionClass} z-50`}> 
-      {/* Toggle button */}
-      <div style={accentStyle}>
-        {island ? (
-          <button
-            aria-label={open ? 'Close chat' : 'Open chat'}
-            onClick={() => setOpen((v) => !v)}
-            className={`dynamic-island-toggle focus:outline-none`}
-          >
-            <span className="sr-only">{open ? 'Close' : 'Open'} chat</span>
-            {open ? '×' : <span className="dynamic-island-pill" aria-hidden />}
-          </button>
-        ) : (
-          <button
-            aria-label={open ? 'Close chat' : 'Open chat'}
-            onClick={() => setOpen((v) => !v)}
-            className="w-14 h-14 rounded-full shadow-lg bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white focus:outline-none"
-          >
-            {open ? '×' : '💬'}
-          </button>
-        )}
-      </div>
-
-      {/* Panel */}
+    <div className={`fixed z-[9999] ${positionClasses[finalConfig.position!]}`}>
+      {/* Chat Panel - positioned relative to the container */}
       <div
-        role="dialog"
-        aria-label="Chat assistant"
-        className={`mt-3 transform transition-all duration-300 ${open ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}
+        className={`absolute transition-all duration-300 ease-in-out ${panelPositionClasses[finalConfig.position!]} ${
+          isOpen 
+            ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto' 
+            : 'opacity-0 scale-95 translate-y-2 pointer-events-none'
+        }`}
+        style={{
+          width: window.innerWidth <= 480 ? '95vw' : finalConfig.width,
+          height: window.innerWidth <= 480 ? '90vh' : finalConfig.height,
+          maxWidth: finalConfig.width,
+          maxHeight: finalConfig.height,
+          borderRadius: finalConfig.borderRadius,
+          backgroundColor: finalConfig.backgroundColor,
+        }}
       >
-        <div className={`w-[380px] md:w-[420px] rounded-2xl overflow-hidden shadow-2xl ${theme === 'light' ? 'bg-white' : 'bg-slate-800'} border border-white/6`}>
-          <div className={`p-3 flex items-center gap-3 ${theme === 'light' ? 'bg-white' : 'bg-gradient-to-br from-indigo-700 to-purple-700'}`}>
-            <div className="w-10 h-10 rounded-md bg-white/20" aria-hidden />
-            <div>
-              <div className={`font-semibold ${themeClass}`}>{title}</div>
-              <div className={`text-xs ${theme === 'light' ? 'text-slate-500' : 'text-slate-200'}`}>{welcomeMessage}</div>
+        <div className="flex flex-col h-full shadow-lg rounded-xl overflow-hidden border border-gray-200 bg-white">
+          {/* Header - Compact design */}
+          <div
+            className="p-3 flex justify-between items-center"
+            style={{
+              backgroundColor: finalConfig.headerBgColor,
+              color: finalConfig.headerTextColor,
+            }}
+          >
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+              <h3 className="font-semibold text-base">
+                {finalConfig.title}
+              </h3>
             </div>
+            <button
+              onClick={() => setIsOpen(false)}
+              className="hover:opacity-70 transition-opacity p-1 rounded hover:bg-white hover:bg-opacity-10"
+              style={{
+                color: finalConfig.headerTextColor,
+                background: 'transparent',
+              }}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
 
-          <div ref={bodyRef} className={`p-4 max-h-[50vh] overflow-auto space-y-3 ${theme === 'light' ? 'bg-white' : 'bg-slate-900'}`}>
-            {messages.map((m) => (
-              <div key={m.id}>
-                <MessageBubble message={m} />
+          {/* Messages - Compact Design */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-white">
+            {messages.length === 0 ? (
+              <div className="text-center text-gray-500 mt-8">
+                <div className="w-12 h-12 mx-auto mb-4 bg-blue-100 rounded-xl flex items-center justify-center">
+                  <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a8.955 8.955 0 01-3.774-.829L3 21l1.829-6.226A8.955 8.955 0 013 12a8 8 0 018-8 8 8 0 018 8z" />
+                  </svg>
+                </div>
+                <h4 className="font-medium text-base text-gray-700 mb-1">Start a conversation</h4>
+                <p className="text-sm text-gray-500">Send a message to get started!</p>
               </div>
-            ))}
-            {loading && <div className="text-sm text-slate-400">Aurora is typing...</div>}
-            {error && <div className="text-sm text-red-400">{error}</div>}
+            ) : (
+              <>
+                {messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex items-start gap-2 ${message.sender === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
+                  >
+                    <div className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold text-white mt-1" 
+                         style={{
+                           backgroundColor: message.sender === 'user' ? '#3B82F6' : '#6B7280'
+                         }}>
+                      {message.sender === 'user' ? 'U' : 'A'}
+                    </div>
+                    <div
+                      className={`flex-1 max-w-xs px-3 py-2 rounded-lg border ${
+                        message.sender === 'user' 
+                          ? 'rounded-br-sm border-transparent' 
+                          : 'bg-gray-50 border-gray-200 rounded-bl-sm'
+                      }`}
+                      style={message.sender === 'user' ? 
+                        { backgroundColor: finalConfig.userBubbleColor, color: finalConfig.buttonTextColor } : 
+                        { backgroundColor: finalConfig.messageBubbleColor, color: finalConfig.textColor }
+                      }
+                    >
+                      <p className="text-sm leading-relaxed break-words">{message.text}</p>
+                      <p className={`text-xs mt-1 ${
+                        message.sender === 'user' ? 'text-white opacity-70' : 'text-gray-400'
+                      }`}>
+                        {formatTime(message.timestamp)}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
+            <div ref={messagesEndRef} />
           </div>
 
-          <div className="p-3 border-t border-white/6 bg-transparent">
-            <div className="flex gap-2">
+          {/* Input - Compact Design */}
+          <div className="p-3 border-t border-gray-200 bg-white">
+            <div className="flex space-x-2 items-center">
               <input
-                aria-label="Chat input"
-                className="flex-1 rounded-md p-2 px-3 bg-white/5 placeholder:text-slate-300 outline-none text-white"
-                placeholder={placeholder}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault()
-                    send()
-                  }
+                type="text"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder={finalConfig.placeholder}
+                className="flex-1 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200"
+                style={{
+                  backgroundColor: finalConfig.inputBgColor,
+                  color: finalConfig.inputTextColor,
                 }}
               />
               <button
-                onClick={send}
-                disabled={loading}
-                className="bg-gradient-to-br from-indigo-500 to-purple-500 text-white px-4 py-2 rounded-md disabled:opacity-60"
+                onClick={handleSendMessage}
+                disabled={!inputValue.trim()}
+                className="px-3 py-2 rounded-lg transition-all duration-200 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{
+                  backgroundColor: finalConfig.buttonBgColor,
+                  color: finalConfig.buttonTextColor,
+                }}
               >
-                Send
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14m-7-7l7 7-7 7" />
+                </svg>
               </button>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Toggle Button - Simple medium size */}
+      <button
+        onClick={() => setIsOpen(true)}
+        className={`absolute rounded-full flex items-center justify-center ${
+          isOpen ? 'opacity-0 pointer-events-none' : 'opacity-100 hover:opacity-90'
+        } w-14 h-14 shadow-lg focus:outline-none`}
+        style={{
+          backgroundColor: finalConfig.primaryColor,
+          color: finalConfig.buttonTextColor,
+          ...(finalConfig.position?.includes('bottom') 
+            ? { bottom: 0 } 
+            : { top: 0 }),
+          ...(finalConfig.position?.includes('right') 
+            ? { right: 0 } 
+            : { left: 0 }),
+          zIndex: 10,
+        }}
+      >
+        {/* Simple chat icon */}
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a8.955 8.955 0 01-3.774-.829L3 21l1.829-6.226A8.955 8.955 0 013 12a8 8 0 018-8 8 8 0 018 8z" />
+        </svg>
+      </button>
     </div>
-  )
-}
+  );
+};
+
+export default ChatWidget;

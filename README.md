@@ -1,85 +1,306 @@
+# React + TypeScript + Vite
+
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+
+Currently, two official plugins are available:
+
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+
 # Chat Assistant Plugin
 
-This repo contains a dual-implementation chat assistant plugin:
+A fully configurable chat widget available in two versions:
+- **React + Tailwind CSS** - For React applications
+- **Vanilla JS + CSS** - For any website (no dependencies)
 
-- React + TypeScript app (Create React App)
-- Vanilla JavaScript plugin that can be dropped into any site (`/public/vanilla-plugin`)
-- Shared backend adapters and sample data
+## 🚀 Features
 
-Quick start
+- ✅ **Fully Configurable** - Colors, size, position, content
+- ✅ **Multiple Positions** - Bottom-left, bottom-right, top-left, top-right
+- ✅ **Smooth Animations** - Professional slide & fade transitions
+- ✅ **Responsive Design** - Works on desktop and mobile
+- ✅ **Sample Messages** - Pre-loaded conversation for demo
+- ✅ **Typing Indicator** - Shows when bot is responding
+- ✅ **Auto-scroll** - Messages automatically scroll to bottom
+- ✅ **Accessibility** - ARIA labels and keyboard navigation
+- ✅ **XSS Protection** - Sanitized message content
 
-1. Install dependencies
+## 📦 Version A: React + Tailwind CSS
 
-```bash
-npm install
+### Setup Instructions
+
+1. **Copy the ChatWidget component:**
+   ```bash
+   cp src/components/ChatWidget.tsx your-project/src/components/
+   ```
+
+2. **Import and use in your React app:**
+   ```tsx
+   import ChatWidget from './components/ChatWidget';
+
+   function App() {
+     return (
+       <div>
+         <ChatWidget config={{
+           position: 'bottom-right',
+           primaryColor: '#10B981',
+           title: 'Support Chat'
+         }} />
+       </div>
+     );
+   }
+   ```
+
+### Example Configurations
+
+```tsx
+// Default blue theme
+<ChatWidget />
+
+// Custom green theme
+<ChatWidget config={{
+  position: 'bottom-left',
+  primaryColor: '#10B981',
+  headerBgColor: '#059669',
+  userBubbleColor: '#10B981',
+  title: 'Support Chat',
+  width: '400px',
+  height: '600px'
+}} />
+
+// Compact purple theme
+<ChatWidget config={{
+  position: 'top-right',
+  primaryColor: '#8B5CF6',
+  headerBgColor: '#7C3AED',
+  title: 'Help',
+  width: '320px',
+  height: '400px',
+  borderRadius: '20px'
+}} />
 ```
 
-2. Start dev server
+## 📦 Version B: Vanilla JS + CSS
 
-```bash
-npm start
+### Setup Instructions
+
+1. **Copy the files to your project:**
+   ```
+   vanilla-js/
+   ├── chat-widget.css
+   ├── chat-widget.js
+   └── index.html (demo)
+   ```
+
+2. **Include in your HTML:**
+   ```html
+   <link rel="stylesheet" href="path/to/chat-widget.css">
+   <script src="path/to/chat-widget.js"></script>
+   ```
+
+3. **Initialize the widget:**
+   ```javascript
+   // Basic usage
+   ChatWidget.init();
+
+   // Custom configuration
+   ChatWidget.init({
+     position: 'bottom-left',
+     primaryColor: '#10B981',
+     title: 'Support Chat',
+     width: '400px',
+     height: '600px'
+   });
+   ```
+
+### Alternative: Auto-initialization
+
+Add a data attribute to any element:
+```html
+<div data-chat-widget='{"position": "bottom-right", "title": "Help"}'></div>
 ```
 
-What I added
+## ⚙️ Configuration Options
 
-- `src/` — React TypeScript app with animated chat widget
-- `public/vanilla-plugin/` — standalone plugin with the same sample data
-- `src/adapters/` — shared adapters and utilities (TypeScript)
+Both versions support the same configuration options:
 
-Requirements mapping
+```javascript
+{
+  // Position
+  position: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left',
+  
+  // Size
+  width: '380px',
+  height: '500px',
+  borderRadius: '12px',
+  
+  // Colors
+  primaryColor: '#3B82F6',        // Main brand color
+  backgroundColor: '#FFFFFF',     // Panel background
+  textColor: '#374151',           // Main text color
+  headerBgColor: '#3B82F6',       // Header background
+  headerTextColor: '#FFFFFF',     // Header text
+  inputBgColor: '#F9FAFB',        // Input background
+  inputTextColor: '#374151',      // Input text
+  buttonBgColor: '#3B82F6',       // Send button
+  buttonTextColor: '#FFFFFF',     // Button text
+  messageBubbleColor: '#F3F4F6',  // Bot message background
+  userBubbleColor: '#3B82F6',     // User message background
+  
+  // Content
+  title: 'Chat Assistant',
+  placeholder: 'Type your message...',
+  
+  // Behavior
+  defaultOpen: false              // Start opened/closed
+}
+```
 
-- React TypeScript app using Create React App — Done
-- Tailwind CSS configured — Done
-- React TSX chat component (animated) — Done
-- Vanilla JS plugin (independent) — Done
-- Shared backend adapters & sample data — Done (mock data)
+## 🎨 Styling Examples
 
-Next steps
+### Corporate Blue (Default)
+```javascript
+{
+  primaryColor: '#3B82F6',
+  headerBgColor: '#3B82F6',
+  userBubbleColor: '#3B82F6'
+}
+```
 
-- Add real-time server and bindings (requested for later)
-# Getting Started with Create React App
+### Success Green
+```javascript
+{
+  primaryColor: '#10B981',
+  headerBgColor: '#059669',
+  userBubbleColor: '#10B981',
+  buttonBgColor: '#10B981'
+}
+```
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+### Royal Purple
+```javascript
+{
+  primaryColor: '#8B5CF6',
+  headerBgColor: '#7C3AED',
+  userBubbleColor: '#8B5CF6',
+  buttonBgColor: '#8B5CF6'
+}
+```
 
-## Available Scripts
+### Dark Mode
+```javascript
+{
+  backgroundColor: '#1F2937',
+  textColor: '#F3F4F6',
+  headerBgColor: '#111827',
+  inputBgColor: '#374151',
+  messageBubbleColor: '#374151'
+}
+```
 
-In the project directory, you can run:
+## 🚀 Advanced Usage
 
-### `npm start`
+### Multiple Widgets (Vanilla JS)
+```javascript
+// Create multiple widgets for different purposes
+const salesChat = ChatWidget.init({
+  position: 'bottom-right',
+  title: 'Sales Chat',
+  primaryColor: '#10B981'
+});
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+const supportChat = ChatWidget.init({
+  position: 'bottom-left', 
+  title: 'Support',
+  primaryColor: '#EF4444'
+});
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+// Destroy when needed
+salesChat.destroy();
+```
 
-### `npm test`
+### Dynamic Configuration (React)
+```tsx
+function App() {
+  const [theme, setTheme] = useState('blue');
+  
+  const themeConfigs = {
+    blue: { primaryColor: '#3B82F6' },
+    green: { primaryColor: '#10B981' },
+    purple: { primaryColor: '#8B5CF6' }
+  };
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+  return (
+    <div>
+      <ChatWidget config={themeConfigs[theme]} />
+    </div>
+  );
+}
+```
 
-### `npm run build`
+## 🌐 Browser Support
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+- ✅ Chrome 60+
+- ✅ Firefox 60+
+- ✅ Safari 12+
+- ✅ Edge 79+
+- ✅ Mobile browsers
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## 📱 Mobile Responsive
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+The widget automatically adapts to mobile screens:
+- Smaller screens: Widget takes more screen space
+- Touch-friendly button sizes
+- Optimized animations for mobile performance
 
-### `npm run eject`
+## 🔒 Security
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+- All user input is sanitized to prevent XSS attacks
+- No external dependencies or CDN requirements
+- No data collection or tracking
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## 🎯 Demo
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+1. **React Version**: Run `npm run dev` and visit the demo
+2. **Vanilla JS Version**: Open `vanilla-js/index.html` in your browser
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+## 📄 License
 
-## Learn More
+MIT License - feel free to use in commercial projects.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## 🤝 Contributing
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+Feel free to submit issues and feature requests!
+
+---
+
+**Need help?** Check the demo files for working examples of both versions.
+
+You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+
+```js
+// eslint.config.js
+import reactX from 'eslint-plugin-react-x'
+import reactDom from 'eslint-plugin-react-dom'
+
+export default tseslint.config([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+      // Enable lint rules for React
+      reactX.configs['recommended-typescript'],
+      // Enable lint rules for React DOM
+      reactDom.configs.recommended,
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
+```

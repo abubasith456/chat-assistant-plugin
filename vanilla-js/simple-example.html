@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Chat Widget Example</title>
+    <link rel="stylesheet" href="chat-widget.css">
+    <style>
+        body {
+            font-family: system-ui, sans-serif;
+            margin: 0;
+            padding: 40px;
+            background: #f0f9ff;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            color: #1f2937;
+            margin-bottom: 20px;
+        }
+        
+        .code {
+            background: #f3f4f6;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Simple Chat Widget Integration</h1>
+        
+        <p>This is a basic example of how to integrate the chat widget into your website.</p>
+        
+        <h2>Integration Steps:</h2>
+        <ol>
+            <li>Include the CSS and JavaScript files</li>
+            <li>Call <code>ChatWidget.init()</code> with your configuration</li>
+            <li>The widget will appear automatically!</li>
+        </ol>
+        
+        <div class="code">
+&lt;link rel="stylesheet" href="chat-widget.css"&gt;<br>
+&lt;script src="chat-widget.js"&gt;&lt;/script&gt;<br>
+&lt;script&gt;<br>
+&nbsp;&nbsp;ChatWidget.init({<br>
+&nbsp;&nbsp;&nbsp;&nbsp;position: 'bottom-right',<br>
+&nbsp;&nbsp;&nbsp;&nbsp;primaryColor: '#10B981',<br>
+&nbsp;&nbsp;&nbsp;&nbsp;title: 'Customer Support'<br>
+&nbsp;&nbsp;});<br>
+&lt;/script&gt;
+        </div>
+        
+        <p><strong>Look at the bottom-right corner</strong> - the chat widget should be visible!</p>
+        
+        <p>You can customize colors, position, size, and content by modifying the configuration object.</p>
+    </div>
+
+    <script src="chat-widget.js"></script>
+    <script>
+        // Initialize the chat widget with a green theme
+        ChatWidget.init({
+            position: 'bottom-right',
+            primaryColor: '#10B981',
+            headerBgColor: '#059669',
+            userBubbleColor: '#10B981',
+            buttonBgColor: '#10B981',
+            title: 'Customer Support',
+            placeholder: 'How can we help you today?'
+        });
+    </script>
+</body>
+</html>
