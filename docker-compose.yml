@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:7860"
+    environment:
+      - NVIDIA_API_KEY=${NVIDIA_API_KEY}
+      - NVIDIA_BASE_URL=${NVIDIA_BASE_URL:-https://integrate.api.nvidia.com/v1}
+      - NVIDIA_MODEL=${NVIDIA_MODEL:-nvidia/llama-3.1-nemotron-70b-instruct}
+      - MODEL_TEMPERATURE=${MODEL_TEMPERATURE:-0.7}
+      - MODEL_MAX_TOKENS=${MODEL_MAX_TOKENS:-1024}
+      - MODEL_TOP_P=${MODEL_TOP_P:-1.0}
+    volumes:
+      - ./backend/.env:/app/.env:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:7860/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

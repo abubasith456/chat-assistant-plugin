@@ -1,5 +1,8 @@
 import React, { Fragment, useState, useRef, useEffect } from 'react';
 
+// WebSocket configuration
+const WS_BASE_URL = 'wss://bug-free-system-944rgq7pxjx2j5w-8000.app.github.dev/ws/';
+
 // Configuration interface
 export interface ChatWidgetConfig {
   // Position
@@ -35,22 +38,31 @@ export interface ChatWidgetConfig {
   
   // Behavior
   defaultOpen?: boolean;
+  useWebSocket?: boolean; // New option to enable WebSocket
 }
-
-// Sample messages
-const sampleMessages: Message[] = [
-  { id: 1, text: "Hi! How can I help you today?", sender: 'bot', timestamp: new Date(Date.now() - 10000) },
-  { id: 2, text: "I need help with my account", sender: 'user', timestamp: new Date(Date.now() - 8000) },
-  { id: 3, text: "I'd be happy to help you with your account. What specific issue are you experiencing?", sender: 'bot', timestamp: new Date(Date.now() - 5000) },
-  { id: 4, text: "I can't log in", sender: 'user', timestamp: new Date(Date.now() - 3000) },
-  { id: 5, text: "Let me help you troubleshoot the login issue. Have you tried resetting your password?", sender: 'bot', timestamp: new Date(Date.now() - 1000) },
-];
 
 interface Message {
   id: number;
   text: string;
   sender: 'user' | 'bot';
   timestamp: Date;
+  type?: 'message' | 'system' | 'typing' | 'error';
+}
+
+// Initial welcome message
+const welcomeMessage: Message = {
+  id: 0,
+  text: "Hi! I'm your AI assistant. How can I help you today?",
+  sender: 'bot',
+  timestamp: new Date(),
+  type: 'system'
+};
+interface Message {
+  id: number;
+  text: string;
+  sender: 'user' | 'bot';
+  timestamp: Date;
+  type?: 'message' | 'system' | 'typing' | 'error';
 }
 
 interface ChatWidgetProps {
@@ -89,16 +101,114 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ config = {} }) => {
 
   // State
   const [isOpen, setIsOpen] = useState(finalConfig.defaultOpen);
-  const [messages, setMessages] = useState<Message[]>(sampleMessages);
+  const [messages, setMessages] = useState<Message[]>([welcomeMessage]);
   const [inputValue, setInputValue] = useState('');
+  const [isConnected, setIsConnected] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
   
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const wsRef = useRef<WebSocket | null>(null);
+  const clientId = useRef(`user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
 
   // Auto-scroll to bottom
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
+
+  // WebSocket connection
+  useEffect(() => {
+    if (finalConfig.useWebSocket && isOpen) { // Only connect when widget is open
+      const connectWebSocket = () => {
+        // Don't create duplicate connections
+        if (wsRef.current && wsRef.current.readyState !== WebSocket.CLOSED) {
+          return;
+        }
+        
+        try {
+          const wsUrl = `${WS_BASE_URL}${clientId.current}`;
+          console.log('Connecting to:', wsUrl);
+          
+          wsRef.current = new WebSocket(wsUrl);
+          
+          wsRef.current.onopen = () => {
+            console.log('WebSocket connected');
+            setIsConnected(true);
+          };
+          
+          wsRef.current.onmessage = (event) => {
+            try {
+              const data = JSON.parse(event.data);
+              console.log('Received message:', data);
+              
+              // Handle different message types
+              if (data.type === 'typing') {
+                setIsTyping(true);
+                return;
+              }
+              
+              if (data.type === 'user') {
+                // Skip echoed user messages as we already added them locally
+                return;
+              }
+              
+              if (data.type === 'assistant' || data.type === 'system') {
+                setIsTyping(false);
+                // Clean markdown formatting from AI response
+                const cleanMessage = data.message
+                  .replace(/\*\*(.*?)\*\*/g, '$1') // Remove **bold**
+                  .replace(/\*(.*?)\*/g, '$1')     // Remove *italic*
+                  .replace(/`(.*?)`/g, '$1')       // Remove `code`
+                  .replace(/#{1,6}\s/g, '')        // Remove headers
+                  .trim();
+                
+                const newMessage: Message = {
+                  id: Date.now(),
+                  text: cleanMessage,
+                  sender: 'bot',
+                  timestamp: new Date(data.timestamp || Date.now()),
+                  type: data.type
+                };
+                setMessages(prev => [...prev, newMessage]);
+              }
+              
+            } catch (error) {
+              console.error('Error parsing WebSocket message:', error);
+            }
+          };
+          
+          wsRef.current.onclose = () => {
+            console.log('WebSocket disconnected');
+            setIsConnected(false);
+            // Only attempt to reconnect if the widget is still open
+            if (isOpen) {
+              setTimeout(connectWebSocket, 3000);
+            }
+          };
+          
+          wsRef.current.onerror = (error) => {
+            console.error('WebSocket error:', error);
+            setIsConnected(false);
+          };
+          
+        } catch (error) {
+          console.error('Error creating WebSocket connection:', error);
+        }
+      };
+      
+      connectWebSocket();
+      
+      // Cleanup
+      return () => {
+        if (wsRef.current) {
+          console.log('Cleaning up WebSocket connection');
+          wsRef.current.close();
+          wsRef.current = null;
+          setIsConnected(false);
+        }
+      };
+    }
+  }, [finalConfig.useWebSocket, isOpen]); // Add isOpen as dependency
 
   useEffect(() => {
     scrollToBottom();
@@ -107,27 +217,57 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ config = {} }) => {
   // Handle send message
   const handleSendMessage = () => {
     if (inputValue.trim()) {
-      const newMessage: Message = {
+      const userMessage: Message = {
         id: Date.now(),
         text: inputValue,
         sender: 'user',
         timestamp: new Date(),
       };
       
-      setMessages(prev => [...prev, newMessage]);
-      setInputValue('');
+      setMessages(prev => [...prev, userMessage]);
       
-      // Simulate bot response
-      setTimeout(() => {
-        const botResponse: Message = {
-          id: Date.now() + 1,
-          text: "Thank you for your message! This is a sample response from the chat assistant.",
-          sender: 'bot',
-          timestamp: new Date(),
-        };
-        setMessages(prev => [...prev, botResponse]);
-      }, 1000);
+      // Show typing indicator immediately after sending
+      setIsTyping(true);
+      
+      // Send via WebSocket if connected
+      if (finalConfig.useWebSocket && wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        try {
+          const wsMessage = {
+            message: inputValue,
+            user_id: clientId.current,
+            session_id: `session_${clientId.current}`
+          };
+          
+          wsRef.current.send(JSON.stringify(wsMessage));
+          console.log('Message sent via WebSocket:', wsMessage);
+        } catch (error) {
+          console.error('Error sending WebSocket message:', error);
+          // Fall back to simulation
+          setIsTyping(false); // Reset typing indicator on error
+          simulateBotResponse();
+        }
+      } else {
+        // Fallback simulation when WebSocket is not available
+        simulateBotResponse();
+      }
+      
+      setInputValue('');
     }
+  };
+
+  // Fallback bot response simulation
+  const simulateBotResponse = () => {
+    // Typing indicator is already set to true, so keep it for a moment
+    setTimeout(() => {
+      setIsTyping(false); // Hide typing indicator
+      const botResponse: Message = {
+        id: Date.now() + 1,
+        text: "Thank you for your message! (This is a fallback response - WebSocket not connected)",
+        sender: 'bot',
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, botResponse]);
+    }, 1500); // Increased delay to show typing effect
   };
 
   // Handle key press
@@ -186,9 +326,25 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ config = {} }) => {
             }}
           >
             <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+              <div 
+                className={`w-2 h-2 rounded-full ${
+                  finalConfig.useWebSocket 
+                    ? (isConnected ? 'bg-green-400' : 'bg-red-400') 
+                    : 'bg-blue-400'
+                }`}
+                title={
+                  finalConfig.useWebSocket 
+                    ? (isConnected ? 'Connected to AI' : 'Disconnected') 
+                    : 'Demo Mode'
+                }
+              ></div>
               <h3 className="font-semibold text-base">
                 {finalConfig.title}
+                {finalConfig.useWebSocket && (
+                  <span className="text-xs opacity-75 ml-1">
+                    {isConnected ? '• Live' : '• Offline'}
+                  </span>
+                )}
               </h3>
             </div>
             <button
@@ -250,6 +406,23 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ config = {} }) => {
                     </div>
                   </div>
                 ))}
+                
+                {/* Typing Indicator */}
+                {isTyping && (
+                  <div className="flex items-start gap-2 flex-row">
+                    <div className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold text-white mt-1 bg-gray-400">
+                      AI
+                    </div>
+                    <div className="flex-1 max-w-xs px-3 py-2 rounded-lg bg-gray-50 border-gray-200 rounded-bl-sm">
+                      <div className="flex space-x-1">
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
               </Fragment>
             )}
             <div ref={messagesEndRef} />

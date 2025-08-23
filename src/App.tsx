@@ -3,7 +3,9 @@ import './App.css';
 
 function App() {
   // Example configurations for different use cases
-  const defaultConfig = {};
+  const defaultConfig = {
+    useWebSocket: true,  // Enable WebSocket connection
+  };
 
   const customConfig = {
     position: 'bottom-left' as const,
@@ -11,13 +13,14 @@ function App() {
     headerBgColor: '#059669',
     userBubbleColor: '#10B981',
     buttonBgColor: '#10B981',
-    title: 'Support Chat',
+    title: 'AI Support Chat',
     width: '400px',
     height: '600px',
     compactHeader: false,
     showOnlineIndicator: true,
     showUserAvatar: true,
     showBotAvatar: true,
+    useWebSocket: true,  // Enable WebSocket connection
   };
 
   const compactConfig = {
@@ -26,7 +29,7 @@ function App() {
     headerBgColor: '#7C3AED',
     userBubbleColor: '#8B5CF6',
     buttonBgColor: '#8B5CF6',
-    title: 'Help',
+    title: 'AI Help',
     width: '320px',
     height: '400px',
     borderRadius: '20px',
@@ -34,6 +37,7 @@ function App() {
     showOnlineIndicator: false,
     showUserAvatar: false,
     showBotAvatar: false,
+    useWebSocket: false,  // Keep as demo mode
   };
 
   return (

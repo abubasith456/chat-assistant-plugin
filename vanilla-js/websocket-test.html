@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Widget - WebSocket Test</title>
+    <link rel="stylesheet" href="chat-widget-enhanced.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            color: white;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        
+        .demo-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .status {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        .status.connected {
+            background: rgba(34, 197, 94, 0.2);
+        }
+        
+        .status.disconnected {
+            background: rgba(239, 68, 68, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 AI Chat Widget - WebSocket Test</h1>
+        
+        <div class="demo-card">
+            <h2>WebSocket Integration Demo</h2>
+            <p>This demo connects to your Codespace backend server via WebSocket for real-time AI chat.</p>
+            
+            <div id="connection-status" class="status">
+                <div><strong>Backend URL:</strong> wss://bug-free-system-944rgq7pxjx2j5w-8000.app.github.dev/ws/</div>
+                <div><strong>Status:</strong> <span id="status-text">Connecting...</span></div>
+                <div><strong>Client ID:</strong> <span id="client-id">-</span></div>
+            </div>
+            
+            <p>Click the chat button in the bottom-right corner to start chatting with the AI!</p>
+        </div>
+        
+        <div class="demo-card">
+            <h3>Features</h3>
+            <ul style="text-align: left; max-width: 500px; margin: 0 auto;">
+                <li>✅ Real-time WebSocket connection to Codespace backend</li>
+                <li>✅ Live connection status indicator</li>
+                <li>✅ Automatic reconnection on disconnect</li>
+                <li>✅ Typing indicators from AI</li>
+                <li>✅ Fallback to demo mode if connection fails</li>
+                <li>✅ Modern UI with smooth animations</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="chat-widget-enhanced.js"></script>
+    <script>
+        // Initialize chat widget with WebSocket enabled
+        const chatWidget = new ChatAssistant({
+            useWebSocket: true,
+            wsUrl: 'wss://bug-free-system-944rgq7pxjx2j5w-8000.app.github.dev/ws/',
+            title: 'AI Assistant',
+            position: 'bottom-right',
+            primaryColor: '#667eea',
+            headerBgColor: '#5a67d8',
+            userBubbleColor: '#667eea',
+            buttonBgColor: '#667eea'
+        });
+
+        // Update status display
+        function updateStatus() {
+            const statusText = document.getElementById('status-text');
+            const clientIdEl = document.getElementById('client-id');
+            const statusDiv = document.getElementById('connection-status');
+            
+            if (chatWidget.widget && chatWidget.widget.isConnected) {
+                statusText.textContent = 'Connected ✅';
+                statusText.style.color = '#10b981';
+                statusDiv.className = 'status connected';
+            } else {
+                statusText.textContent = 'Disconnected ❌';
+                statusText.style.color = '#ef4444';
+                statusDiv.className = 'status disconnected';
+            }
+            
+            if (chatWidget.widget && chatWidget.widget.clientId) {
+                clientIdEl.textContent = chatWidget.widget.clientId;
+            }
+        }
+
+        // Check status every 2 seconds
+        setInterval(updateStatus, 2000);
+        updateStatus();
+
+        console.log('Chat widget initialized with WebSocket support');
+        console.log('Backend URL:', 'wss://bug-free-system-944rgq7pxjx2j5w-8000.app.github.dev/ws/');
+    </script>
+</body>
+</html>

@@ -78,6 +78,16 @@ class ConnectionManager:
         
     async def connect(self, websocket: WebSocket, client_id: str):
         await websocket.accept()
+        
+        # Close existing connection for this client if it exists
+        if client_id in self.active_connections:
+            try:
+                old_ws = self.active_connections[client_id]
+                if old_ws.client_state != websockets.ConnectionState.CLOSED:
+                    await old_ws.close()
+            except Exception as e:
+                logger.warning(f"Error closing old connection for {client_id}: {e}")
+        
         self.active_connections[client_id] = websocket
         logger.info(f"Client {client_id} connected. Total connections: {len(self.active_connections)}")
         
@@ -134,7 +144,7 @@ async def get_llm_response(message: str, conversation_history: List[dict] = None
         messages = [
             {
                 "role": "system", 
-                "content": "You are a helpful AI assistant. Provide clear, concise, and friendly responses."
+                "content": "You are a helpful and friendly AI assistant. Keep your responses conversational, concise, and natural. Avoid using markdown formatting like **bold** or *italic*. Respond in a warm, human-like way as if you're having a casual conversation."
             }
         ]
         
@@ -169,15 +179,6 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
     conversation_history = []
     
     try:
-        # Send welcome message
-        welcome_msg = {
-            "type": "system",
-            "message": "Connected to Chat Assistant! How can I help you today?",
-            "timestamp": datetime.now().isoformat(),
-            "sender": "assistant"
-        }
-        await manager.send_personal_message(welcome_msg, client_id)
-        
         while True:
             # Receive message from client
             data = await websocket.receive_text()
@@ -249,11 +250,14 @@ async def health_check():
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
 if __name__ == "__main__":
+    # Get port from environment variable (for Hugging Face) or default to 8000
+    port = int(os.getenv("PORT", 8000))
+    
     # Run server
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
-        port=8000,
+        port=port,
         reload=True,
         log_level="info"
     )
