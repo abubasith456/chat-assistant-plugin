@@ -48,8 +48,8 @@
         showOnlineIndicator: true,
         compactHeader: false,
         
-        // WebSocket Configuration
-        useWebSocket: false,
+                // WebSocket configuration
+        useWebSocket: true,
         wsUrl: 'wss://bug-free-system-944rgq7pxjx2j5w-8000.app.github.dev/ws/',
         
         // Behavior
@@ -89,9 +89,7 @@
             this.renderMessages();
             
             // Add welcome message
-            if (!this.config.useWebSocket) {
-                this.addMessage("Hi! I'm your AI assistant. How can I help you today?", 'bot', 'system');
-            }
+            this.addMessage("Hi! I'm your AI assistant. How can I help you today?", 'bot', 'system');
             
             // Load enhanced CSS
             this.loadEnhancedCSS();
@@ -240,6 +238,18 @@
                     // this.close();
                 }
             });
+
+            // Handle page unload/refresh - cleanup WebSocket connections
+            window.addEventListener('beforeunload', () => {
+                if (this.ws && this.ws.readyState !== WebSocket.CLOSED) {
+                    console.log('Page unloading - closing WebSocket');
+                    this.ws.close();
+                }
+            });
+
+            window.addEventListener('unload', () => {
+                this.cleanup();
+            });
         }
 
         updateSendButton() {
@@ -267,7 +277,8 @@
                     const wsMessage = {
                         message: text,
                         user_id: this.clientId,
-                        session_id: `session_${this.clientId}`
+                        session_id: `session_${this.clientId}`,
+                        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
                     };
                     
                     this.ws.send(JSON.stringify(wsMessage));
@@ -470,8 +481,32 @@
         }
 
         close() {
+            this.cleanup();
             this.isOpen = false;
             this.updateDisplay();
+        }
+
+        cleanup() {
+            console.log('Cleaning up chat widget...');
+            
+            // Close WebSocket connection
+            if (this.ws && this.ws.readyState !== WebSocket.CLOSED) {
+                console.log('Closing WebSocket connection');
+                this.ws.close();
+                this.ws = null;
+            }
+            
+            // Reset to welcome message only
+            this.messages = [];
+            this.addMessage("Hi! I'm your AI assistant. How can I help you today?", 'bot', 'system');
+            
+            // Reset states
+            this.isTyping = false;
+            this.isConnected = false;
+            this.updateConnectionStatus();
+            this.renderMessages();
+            
+            console.log('Chat widget cleanup complete');
         }
 
         toggle() {
@@ -510,12 +545,8 @@
         }
 
         destroy() {
-            // Close WebSocket connection
-            if (this.ws && this.ws.readyState !== WebSocket.CLOSED) {
-                console.log('Closing WebSocket connection on destroy');
-                this.ws.close();
-                this.ws = null;
-            }
+            // Clean up first
+            this.cleanup();
             
             if (this.element && this.element.parentNode) {
                 this.element.parentNode.removeChild(this.element);
