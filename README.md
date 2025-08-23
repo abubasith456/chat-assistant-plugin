@@ -238,6 +238,158 @@ function App() {
 }
 ```
 
+## 🧪 Testing & Development
+
+### Local Development
+
+1. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+2. **Start development server:**
+   ```bash
+   npm run dev
+   ```
+
+3. **Build for production:**
+   ```bash
+   npm run build
+   ```
+
+### Testing the Plugins
+
+#### Test React Version
+```bash
+# Start development server
+npm run dev
+
+# Visit http://localhost:5173 to see the React version
+```
+
+#### Test Vanilla JS Version
+```bash
+# Open the vanilla demo directly
+open vanilla-js/index.html
+
+# Or serve it with a local server
+npx serve vanilla-js
+```
+
+## 📦 Publishing to npm
+
+This project includes automated scripts for building and publishing both versions to npm.
+
+### Prerequisites
+
+1. **npm account**: Make sure you're logged in to npm
+   ```bash
+   npm whoami  # Should show your npm username
+   # If not logged in: npm login
+   ```
+
+2. **Required dependencies**: 
+   ```bash
+   npm install uglify-js --save-dev
+   ```
+
+### Publishing Scripts
+
+#### Option 1: Complete Pipeline (Recommended)
+
+**Test everything first (dry run):**
+```bash
+./scripts/complete-publish.sh --dry-run
+```
+
+**Publish and clean everything:**
+```bash
+./scripts/complete-publish.sh
+```
+
+This single command will:
+- 🏗️ Build vanilla JavaScript plugin with minification
+- 📦 Publish both packages to npm with auto-version incrementing
+- 🧹 Clean all caches (npm, yarn, Docker, temp files)
+- 📥 Reinstall fresh dependencies
+
+#### Option 2: Step-by-Step
+
+**Build vanilla plugin only:**
+```bash
+node scripts/build-vanilla.js
+```
+
+**Publish both packages:**
+```bash
+./scripts/publish-packages.sh --dry-run  # Test first
+./scripts/publish-packages.sh            # Actual publish
+```
+
+### Published Packages
+
+After publishing, your packages will be available as:
+
+**Vanilla JavaScript Plugin:**
+```bash
+npm install chat-assistant-plugin
+```
+
+**React Component:**
+```bash
+npm install @mohamedabu.basith/react-chat-widget
+```
+
+### Script Details
+
+#### `complete-publish.sh` Features:
+- ✅ **Automatic building** of vanilla plugin with minification
+- ✅ **Smart version management** - auto-increments if version exists
+- ✅ **Multiple build formats** for React (ESM, UMD, Modern JS)
+- ✅ **Cache cleanup** - npm, yarn, Docker, temp files
+- ✅ **Fresh dependency installation**
+- ✅ **Dry-run mode** for safe testing
+
+#### Available Commands:
+```bash
+# Help
+./scripts/complete-publish.sh --help
+
+# Test without publishing
+./scripts/complete-publish.sh --dry-run
+
+# Full publish + clean
+./scripts/complete-publish.sh
+```
+
+### Troubleshooting
+
+**Permission issues:**
+```bash
+# Make scripts executable
+chmod +x scripts/*.sh
+```
+
+**npm login issues:**
+```bash
+npm login
+npm whoami  # Verify login
+```
+
+**Build errors:**
+```bash
+# Clean and reinstall
+rm -rf node_modules package-lock.json
+npm install
+```
+
+**Cache issues:**
+```bash
+# Manual cache cleanup
+npm cache clean --force
+rm -rf node_modules build dist
+```
+
 ## 🌐 Browser Support
 
 - ✅ Chrome 60+
