@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { Fragment, useState, useRef, useEffect } from 'react';
 
 // Configuration interface
 export interface ChatWidgetConfig {
@@ -218,7 +218,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ config = {} }) => {
                 <p className="text-sm text-gray-500">Send a message to get started!</p>
               </div>
             ) : (
-              <>
+              <Fragment>
                 {messages.map((message) => (
                   <div
                     key={message.id}
@@ -250,7 +250,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ config = {} }) => {
                     </div>
                   </div>
                 ))}
-              </>
+              </Fragment>
             )}
             <div ref={messagesEndRef} />
           </div>

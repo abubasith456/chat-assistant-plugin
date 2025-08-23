@@ -1,7 +1,11 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 console.log('🏗️  Building vanilla JavaScript plugin...');
 
@@ -15,8 +19,8 @@ if (!fs.existsSync(buildDir)) {
 
 // Copy files to build directory
 const filesToCopy = [
-  'chat-assistant.js',
-  'chat-assistant.css', 
+  'plugin.js',
+  'plugin.css', 
   'README.md'
 ];
 
@@ -33,11 +37,11 @@ filesToCopy.forEach(file => {
 });
 
 // Create minified versions
-const uglifyJS = require('uglify-js');
+import uglifyJS from 'uglify-js';
 
 try {
   // Minify JavaScript
-  const jsContent = fs.readFileSync(path.join(srcDir, 'chat-assistant.js'), 'utf8');
+  const jsContent = fs.readFileSync(path.join(srcDir, 'plugin.js'), 'utf8');
   const minifiedJS = uglifyJS.minify(jsContent, {
     compress: {
       drop_console: true,
@@ -49,8 +53,8 @@ try {
   if (minifiedJS.error) {
     console.error('❌ JavaScript minification failed:', minifiedJS.error);
   } else {
-    fs.writeFileSync(path.join(buildDir, 'chat-assistant.min.js'), minifiedJS.code);
-    console.log('✅ Created chat-assistant.min.js');
+    fs.writeFileSync(path.join(buildDir, 'plugin.min.js'), minifiedJS.code);
+    console.log('✅ Created plugin.min.js');
   }
 } catch (error) {
   console.warn('⚠️  Could not create minified JS (uglify-js not installed)');
@@ -58,16 +62,19 @@ try {
 }
 
 // Create package info
+// Create package.json for distribution
+const packageJson = JSON.parse(fs.readFileSync(path.join(__dirname, '../package.json'), 'utf8'));
+
 const packageInfo = {
   name: 'chat-assistant-vanilla',
-  version: require('../package.json').version,
+  version: packageJson.version,
   description: 'Vanilla JavaScript chat assistant widget - no dependencies required',
-  main: 'chat-assistant.js',
-  style: 'chat-assistant.css',
+  main: 'plugin.js',
+  style: 'plugin.css',
   files: [
-    'chat-assistant.js',
-    'chat-assistant.min.js', 
-    'chat-assistant.css',
+    'plugin.js',
+    'plugin.min.js', 
+    'plugin.css',
     'README.md'
   ],
   keywords: ['chat', 'widget', 'assistant', 'vanilla', 'javascript', 'ui'],
