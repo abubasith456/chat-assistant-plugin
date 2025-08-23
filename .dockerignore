@@ -1,0 +1,53 @@
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Frontend build
+dist/
+build/
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+README.md
+docs/
+
+# Development files
+.env.local
+.env.development
+.env.test
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python (but keep backend)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Exclude everything except backend
+/*
+!/backend/
+!/Dockerfile
+!/docker-compose.yml
+
+# But include these specific files
+!README_HUGGINGFACE.md

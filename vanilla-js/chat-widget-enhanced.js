@@ -48,6 +48,10 @@
         showOnlineIndicator: true,
         compactHeader: false,
         
+        // WebSocket Configuration
+        useWebSocket: false,
+        wsUrl: 'wss://bug-free-system-944rgq7pxjx2j5w-8000.app.github.dev/ws/',
+        
         // Behavior
         defaultOpen: false
     };
@@ -59,8 +63,14 @@
         constructor(config = {}) {
             this.config = { ...DEFAULT_CONFIG, ...config };
             this.isOpen = this.config.defaultOpen;
-            this.messages = [...SAMPLE_MESSAGES];
+            this.messages = this.config.useWebSocket ? [] : [...SAMPLE_MESSAGES];
             this.messageId = this.messages.length + 1;
+            
+            // WebSocket properties
+            this.ws = null;
+            this.isConnected = false;
+            this.isTyping = false;
+            this.clientId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
             
             this.element = null;
             this.panel = null;
@@ -77,6 +87,11 @@
             this.attachEventListeners();
             this.updateDisplay();
             this.renderMessages();
+            
+            // Add welcome message
+            if (!this.config.useWebSocket) {
+                this.addMessage("Hi! I'm your AI assistant. How can I help you today?", 'bot', 'system');
+            }
             
             // Load enhanced CSS
             this.loadEnhancedCSS();
@@ -237,30 +252,170 @@
             if (!text) return;
 
             // Add user message
-            const userMessage = {
-                id: this.messageId++,
-                text: text,
-                sender: 'user',
-                timestamp: new Date()
-            };
-            this.messages.push(userMessage);
+            this.addMessage(text, 'user');
 
             // Clear input
             this.messageInput.value = '';
             this.updateSendButton();
 
-            // Simulate bot response
-            setTimeout(() => {
-                const botMessage = {
-                    id: this.messageId++,
-                    text: `Thanks for your message: "${text}". This is an automated response.`,
-                    sender: 'bot',
-                    timestamp: new Date()
-                };
-                this.messages.push(botMessage);
-                this.renderMessages();
-            }, 1000);
+            // Show typing indicator immediately after sending
+            this.showTypingIndicator();
 
+            // Send via WebSocket if connected
+            if (this.config.useWebSocket && this.ws && this.ws.readyState === WebSocket.OPEN) {
+                try {
+                    const wsMessage = {
+                        message: text,
+                        user_id: this.clientId,
+                        session_id: `session_${this.clientId}`
+                    };
+                    
+                    this.ws.send(JSON.stringify(wsMessage));
+                    console.log('Message sent via WebSocket:', wsMessage);
+                } catch (error) {
+                    console.error('Error sending WebSocket message:', error);
+                    this.hideTypingIndicator(); // Reset typing indicator on error
+                    this.simulateBotResponse(text);
+                }
+            } else {
+                // Fallback simulation
+                this.simulateBotResponse(text);
+            }
+
+            this.renderMessages();
+        }
+
+        simulateBotResponse(userText) {
+            // Typing indicator is already shown, keep it for a moment
+            setTimeout(() => {
+                this.hideTypingIndicator(); // Hide typing indicator
+                this.addMessage(
+                    `Thanks for your message: "${userText}". ${this.config.useWebSocket ? '(WebSocket not connected)' : 'This is a demo response.'}`,
+                    'bot'
+                );
+                this.renderMessages();
+            }, 1500); // Increased delay to show typing effect
+        }
+
+        addMessage(text, sender, type = 'message') {
+            const message = {
+                id: this.messageId++,
+                text: text,
+                sender: sender,
+                timestamp: new Date(),
+                type: type
+            };
+            this.messages.push(message);
+            return message;
+        }
+
+        // WebSocket methods
+        initWebSocket() {
+            if (!this.config.wsUrl) {
+                console.warn('WebSocket URL not provided');
+                return;
+            }
+
+            // Close existing connection if it exists
+            if (this.ws && this.ws.readyState !== WebSocket.CLOSED) {
+                console.log('Closing existing WebSocket connection');
+                this.ws.close();
+                this.ws = null;
+            }
+
+            try {
+                const wsUrl = `${this.config.wsUrl}${this.clientId}`;
+                console.log('Connecting to WebSocket:', wsUrl);
+                
+                this.ws = new WebSocket(wsUrl);
+                
+                this.ws.onopen = () => {
+                    console.log('WebSocket connected');
+                    this.isConnected = true;
+                    this.updateConnectionStatus();
+                };
+                
+                this.ws.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        console.log('Received WebSocket message:', data);
+                        
+                        if (data.type === 'typing') {
+                            this.showTypingIndicator();
+                            return;
+                        }
+                        
+                        if (data.type === 'user') {
+                            // Skip echoed user messages as we already added them locally
+                            return;
+                        }
+                        
+                        if (data.type === 'assistant' || data.type === 'system') {
+                            this.hideTypingIndicator();
+                            // Clean markdown formatting from AI response
+                            const cleanMessage = data.message
+                                .replace(/\*\*(.*?)\*\*/g, '$1') // Remove **bold**
+                                .replace(/\*(.*?)\*/g, '$1')     // Remove *italic*
+                                .replace(/`(.*?)`/g, '$1')       // Remove `code`
+                                .replace(/#{1,6}\s/g, '')        // Remove headers
+                                .trim();
+                            this.addMessage(cleanMessage, 'bot', data.type);
+                            this.renderMessages();
+                        }
+                    } catch (error) {
+                        console.error('Error parsing WebSocket message:', error);
+                    }
+                };
+                
+                this.ws.onclose = () => {
+                    console.log('WebSocket disconnected');
+                    this.isConnected = false;
+                    this.updateConnectionStatus();
+                    
+                    // Attempt to reconnect after 3 seconds
+                    setTimeout(() => this.initWebSocket(), 3000);
+                };
+                
+                this.ws.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                    this.isConnected = false;
+                    this.updateConnectionStatus();
+                };
+                
+            } catch (error) {
+                console.error('Error creating WebSocket connection:', error);
+            }
+        }
+
+        updateConnectionStatus() {
+            const indicator = this.panel.querySelector('.status-indicator');
+            if (indicator) {
+                indicator.className = `status-indicator ${
+                    this.config.useWebSocket 
+                        ? (this.isConnected ? 'connected' : 'disconnected')
+                        : 'demo'
+                }`;
+                
+                indicator.title = this.config.useWebSocket 
+                    ? (this.isConnected ? 'Connected to AI' : 'Disconnected') 
+                    : 'Demo Mode';
+            }
+
+            const statusText = this.panel.querySelector('.connection-status');
+            if (statusText) {
+                statusText.textContent = this.config.useWebSocket 
+                    ? (this.isConnected ? '• Live' : '• Offline')
+                    : '';
+            }
+        }
+
+        showTypingIndicator() {
+            this.isTyping = true;
+            this.renderMessages();
+        }
+
+        hideTypingIndicator() {
+            this.isTyping = false;
             this.renderMessages();
         }
 
@@ -268,7 +423,7 @@
             const emptyState = this.panel.querySelector('.empty-state');
             emptyState.style.display = this.messages.length === 0 ? 'block' : 'none';
 
-            this.messagesContainer.innerHTML = this.messages.map(message => `
+            let messagesHTML = this.messages.map(message => `
                 <div class="message ${message.sender}">
                     <div class="message-avatar ${message.sender}">${message.sender === 'user' ? 'U' : 'A'}</div>
                     <div class="message-bubble ${message.sender}">
@@ -279,6 +434,24 @@
                     </div>
                 </div>
             `).join('');
+
+            // Add typing indicator if assistant is typing
+            if (this.isTyping) {
+                messagesHTML += `
+                    <div class="message bot typing-indicator">
+                        <div class="message-avatar bot">A</div>
+                        <div class="message-bubble bot">
+                            <div class="typing-dots">
+                                <span class="dot"></span>
+                                <span class="dot"></span>
+                                <span class="dot"></span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            this.messagesContainer.innerHTML = messagesHTML;
 
             // Scroll to bottom
             this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
@@ -304,6 +477,17 @@
         toggle() {
             this.isOpen = !this.isOpen;
             this.updateDisplay();
+            
+            // Manage WebSocket connection based on widget state
+            if (this.isOpen && this.config.useWebSocket) {
+                this.initWebSocket();
+            } else if (!this.isOpen && this.ws) {
+                console.log('Closing WebSocket connection on widget close');
+                this.ws.close();
+                this.ws = null;
+                this.isConnected = false;
+                this.updateConnectionStatus();
+            }
         }
 
         updateDisplay() {
@@ -326,6 +510,13 @@
         }
 
         destroy() {
+            // Close WebSocket connection
+            if (this.ws && this.ws.readyState !== WebSocket.CLOSED) {
+                console.log('Closing WebSocket connection on destroy');
+                this.ws.close();
+                this.ws = null;
+            }
+            
             if (this.element && this.element.parentNode) {
                 this.element.parentNode.removeChild(this.element);
             }
