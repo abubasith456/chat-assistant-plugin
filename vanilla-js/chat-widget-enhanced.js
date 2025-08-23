@@ -50,7 +50,9 @@
         
                 // WebSocket configuration
         useWebSocket: true,
-        wsUrl: 'wss://bug-free-system-944rgq7pxjx2j5w-8000.app.github.dev/ws/',
+        wsUrl: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? 'ws://localhost:8000/ws/'
+            : 'wss://abubasith86-chat-agent-plugin.hf.space/ws/',
         
         // Behavior
         defaultOpen: false

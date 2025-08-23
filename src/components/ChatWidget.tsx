@@ -1,7 +1,9 @@
 import React, { Fragment, useState, useRef, useEffect, useCallback } from 'react';
 
 // WebSocket configuration
-const WS_BASE_URL = 'wss://bug-free-system-944rgq7pxjx2j5w-8000.app.github.dev/ws/';
+const WS_BASE_URL = import.meta.env.PROD 
+  ? 'wss://abubasith86-chat-agent-plugin.hf.space/ws/' 
+  : 'ws://localhost:8000/ws/';
 
 // Configuration interface
 export interface ChatWidgetConfig {
