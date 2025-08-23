@@ -7,5 +7,10 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     port: 5174
+  },
+  base: process.env.NODE_ENV === 'production' ? '/chat-assistant-plugin/' : '/',
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets'
   }
 })
