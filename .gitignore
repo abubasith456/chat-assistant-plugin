@@ -26,6 +26,10 @@ dist-ssr
 package-lock.json
 *.env
 
+# Config files that conflict with @tailwindcss/vite
+postcss.config.*
+tailwind.config.*
+
 # Python bytecode
 __pycache__/
 *.py[cod]

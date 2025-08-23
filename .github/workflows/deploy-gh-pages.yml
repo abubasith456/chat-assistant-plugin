@@ -32,6 +32,7 @@ jobs:
     - name: Clean install dependencies
       run: |
         rm -f package-lock.json
+        rm -f postcss.config.* tailwind.config.*
         npm install
         
     - name: Build project
