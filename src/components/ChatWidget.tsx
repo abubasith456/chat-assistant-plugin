@@ -1,4 +1,4 @@
-import React, { Fragment, useState, useRef, useEffect } from 'react';
+import React, { Fragment, useState, useRef, useEffect, useCallback } from 'react';
 
 // WebSocket configuration
 const WS_BASE_URL = 'wss://bug-free-system-944rgq7pxjx2j5w-8000.app.github.dev/ws/';
@@ -111,6 +111,33 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ config = {} }) => {
   const wsRef = useRef<WebSocket | null>(null);
   const clientId = useRef(`user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
 
+  // Cleanup function
+  const cleanup = useCallback(() => {
+    console.log('Cleaning up chat widget...');
+    
+    // Close WebSocket connection
+    if (wsRef.current && wsRef.current.readyState !== WebSocket.CLOSED) {
+      console.log('Closing WebSocket connection');
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+    
+    // Reset messages to welcome message only
+    setMessages([welcomeMessage]);
+    
+    // Reset states
+    setIsTyping(false);
+    setIsConnected(false);
+    
+    console.log('Chat widget cleanup complete');
+  }, []);
+
+  // Close widget with cleanup
+  const closeWidget = useCallback(() => {
+    cleanup();
+    setIsOpen(false);
+  }, [cleanup]);
+
   // Auto-scroll to bottom
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -214,6 +241,35 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ config = {} }) => {
     scrollToBottom();
   }, [messages]);
 
+  // Handle page unload/refresh - cleanup WebSocket connections
+  useEffect(() => {
+    const handlePageUnload = () => {
+      if (wsRef.current && wsRef.current.readyState !== WebSocket.CLOSED) {
+        console.log('Page unloading - closing WebSocket');
+        wsRef.current.close();
+      }
+    };
+
+    const handleBeforeUnload = (_e: BeforeUnloadEvent) => {
+      if (wsRef.current && wsRef.current.readyState !== WebSocket.CLOSED) {
+        handlePageUnload();
+        // Optional: Show warning if there's an active connection
+        // e.preventDefault();
+        // e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('unload', handlePageUnload);
+
+    // Cleanup function
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('unload', handlePageUnload);
+      cleanup(); // Clean up when component unmounts
+    };
+  }, [cleanup]);
+
   // Handle send message
   const handleSendMessage = () => {
     if (inputValue.trim()) {
@@ -235,7 +291,8 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ config = {} }) => {
           const wsMessage = {
             message: inputValue,
             user_id: clientId.current,
-            session_id: `session_${clientId.current}`
+            session_id: `session_${clientId.current}`,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
           };
           
           wsRef.current.send(JSON.stringify(wsMessage));
@@ -348,7 +405,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ config = {} }) => {
               </h3>
             </div>
             <button
-              onClick={() => setIsOpen(false)}
+              onClick={closeWidget}
               className="hover:opacity-70 transition-opacity p-1 rounded hover:bg-white hover:bg-opacity-10"
               style={{
                 color: finalConfig.headerTextColor,

@@ -28,16 +28,19 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '18'
-        cache: 'npm'
         
-    - name: Install dependencies
-      run: npm ci
-      
+    - name: Clean install dependencies
+      run: |
+        rm -f package-lock.json
+        npm install
+        
     - name: Build project
       run: npm run build
       env:
         # Set the base URL for GitHub Pages
         VITE_BASE_URL: /chat-assistant-plugin/
+        # Disable engine strict checks for compatibility
+        NPM_CONFIG_ENGINE_STRICT: false
         
     - name: Setup Pages
       uses: actions/configure-pages@v4
