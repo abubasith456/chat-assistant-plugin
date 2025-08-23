@@ -32,11 +32,21 @@ class WebSocketHandler:
             client_metadata = self.manager.get_client_metadata(client_id)
             client_timezone = client_metadata.get('timezone', 'UTC')
             
-            logger.info(f"Received from {client_id}: {user_message} (timezone: {client_timezone})")
+            # Extract project_id from client_id if it follows the pattern proj_*
+            project_id = None
+            if client_id.startswith('proj_'):
+                project_id = client_id
+            
+            logger.info(f"Received from {client_id}: {user_message} (timezone: {client_timezone}, project_id: {project_id})")
 
             # Initialize conversation history if not exists
             if client_id not in self.conversation_histories:
                 self.conversation_histories[client_id] = []
+                
+                # Send welcome message if this is a new conversation and we have a project_id
+                if project_id:
+                    welcome_message = self.agent_service.get_welcome_message(project_id)
+                    await self._send_welcome_message(client_id, welcome_message)
 
             # Echo user message back (optional, for UI confirmation)
             await self._send_user_message_confirmation(client_id, user_message)
@@ -50,12 +60,13 @@ class WebSocketHandler:
             # Send typing indicator
             await self._send_typing_indicator(client_id)
 
-            # Get AI response with client's timezone context
+            # Get AI response with client's timezone context and project configuration
             ai_response = await self._get_ai_response(
                 user_message, 
                 self.conversation_histories[client_id],
                 client_timezone,
-                client_metadata
+                client_metadata,
+                project_id
             )
 
             # Add AI response to conversation history
@@ -83,6 +94,17 @@ class WebSocketHandler:
         }
         await self.manager.send_personal_message(user_msg, client_id)
 
+    async def _send_welcome_message(self, client_id: str, welcome_message: str):
+        """Send welcome message to client"""
+        welcome_msg = {
+            "type": "assistant",
+            "message": welcome_message,
+            "timestamp": datetime.now().isoformat(),
+            "sender": "assistant",
+            "is_welcome": True,
+        }
+        await self.manager.send_personal_message(welcome_msg, client_id)
+
     async def _send_typing_indicator(self, client_id: str):
         """Send typing indicator to client"""
         typing_msg = {
@@ -94,13 +116,14 @@ class WebSocketHandler:
         await self.manager.send_personal_message(typing_msg, client_id)
 
     async def _get_ai_response(self, message: str, conversation_history: List[dict], 
-                              timezone: str, metadata: dict) -> str:
+                              timezone: str, metadata: dict, project_id: Optional[str] = None) -> str:
         """Get AI response using agent service with client context"""
         try:
             response = self.agent_service.run(
                 user_message=message,
                 conversation_history=conversation_history,
-                client_timezone=timezone
+                client_timezone=timezone,
+                project_id=project_id
             )
             return response
         except Exception as e:

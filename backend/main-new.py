@@ -5,29 +5,41 @@ import os
 import logging
 from contextlib import asynccontextmanager
 from datetime import datetime
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from database.mongo_config import db_config
 from api.auth import router as auth_router
 from api.projects import router as projects_router
+from services.websocket.connection_manager import ConnectionManager
+from services.websocket.message_handler import MessageHandler
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# WebSocket connection manager
+connection_manager = ConnectionManager()
+message_handler = MessageHandler(connection_manager)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting up...")
     
-    # Connect to MongoDB
+    # Connect to MongoDB - will use environment variable or prompt for connection URL
     mongodb_url = os.getenv("MONGODB_URL")
     if not mongodb_url:
         print("\n" + "="*50)
         print("MONGODB CONNECTION REQUIRED")
         print("="*50)
         print("Please provide your MongoDB connection URL.")
+        print("Example: mongodb+srv://username:password@cluster.mongodb.net/database")
+        print("Or set MONGODB_URL environment variable")
         print("="*50)
+        
+        # For now, we'll use a default connection that will likely fail
+        # This allows the app to start so you can provide the URL via API or environment
         mongodb_url = "mongodb://localhost:27017"
     
     # Try to connect to MongoDB
@@ -99,6 +111,20 @@ async def configure_mongodb(connection_data: dict):
             raise HTTPException(status_code=400, detail="Failed to connect to MongoDB")
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Connection error: {str(e)}")
+
+# WebSocket endpoint for chat
+@app.websocket("/ws/{client_id}")
+async def websocket_endpoint(websocket: WebSocket, client_id: str):
+    """WebSocket endpoint for chat communication"""
+    await connection_manager.connect(websocket, client_id)
+    
+    try:
+        while True:
+            data = await websocket.receive_text()
+            await message_handler.handle_message(client_id, data)
+            
+    except WebSocketDisconnect:
+        connection_manager.disconnect(client_id)
 
 if __name__ == "__main__":
     import uvicorn

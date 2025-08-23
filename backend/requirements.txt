@@ -8,3 +8,8 @@ python-dotenv==1.0.0
 requests==2.31.0
 pytz==2023.3
 haystack-ai==2.17.1
+motor==3.6.0
+pymongo==4.10.1
+bcrypt==4.2.1
+python-jose[cryptography]==3.3.0
+pydantic[email]
